@@ -99,6 +99,10 @@ func (s *DeploysService) create(dirOrZip string, draft bool) (*Deploy, *Response
 		return deploy, resp, err
 	}
 
+	if dirOrZip == "" {
+		return deploy, resp, err
+	}
+
 	resp, err = deploy.Deploy(dirOrZip)
 	return deploy, resp, err
 }
