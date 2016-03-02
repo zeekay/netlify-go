@@ -222,7 +222,7 @@ func (deploy *Deploy) deployDir(dir string) (*Response, error) {
 				return err
 			}
 
-			if strings.HasPrefix(rel, ".") || strings.Contains(rel, "/.") || strings.HasPrefix(rel, "__MACOS") {
+			if ignoreFile(rel) {
 				return nil
 			}
 
@@ -402,4 +402,14 @@ func (deploy *Deploy) WaitForReady(timeout time.Duration) error {
 
 	err := <-done
 	return err
+}
+
+func ignoreFile(rel string) bool {
+	if strings.HasPrefix(rel, ".") || strings.Contains(rel, "/.") || strings.HasPrefix(rel, "__MACOS") {
+		if strings.HasPrefix(rel, ".well-known/") {
+			return false
+		}
+		return true
+	}
+	return false
 }
