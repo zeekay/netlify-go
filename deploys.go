@@ -99,9 +99,8 @@ type deployFiles struct {
 func (s *DeploysService) apiPath() string {
 	if s.site != nil {
 		return path.Join(s.site.apiPath(), "deploys")
-	} else {
-		return "/deploys"
 	}
+	return "/deploys"
 }
 
 // Create a new deploy
@@ -267,6 +266,7 @@ func (deploy *Deploy) DeployDirWithGitInfo(dir, branch, commitRef string) (*Resp
 	})
 	defer log.Infof("Finished deploying directory %s", dir)
 
+	log.Infof("Starting deploy of directory %s", dir)
 	err := filepath.Walk(dir, func(path string, info os.FileInfo, err error) error {
 		if err != nil {
 			return err
@@ -355,7 +355,7 @@ func (deploy *Deploy) DeployDirWithGitInfo(dir, branch, commitRef string) (*Resp
 		lookup[sha] = true
 	}
 
-	log.Debugf("Going to deploy the %d required files", len(lookup))
+	log.Infof("Going to deploy the %d required files", len(lookup))
 
 	// Use a channel as a semaphore to limit # of parallel uploads
 	sem := make(chan int, deploy.client.MaxConcurrentUploads)
@@ -403,6 +403,7 @@ func (deploy *Deploy) deployZip(zip string) (*Response, error) {
 		"function": "zip",
 		"zip_path": zip,
 	})
+	log.Infof("Starting to deploy zip file %s", zip)
 	zipPath, err := filepath.Abs(zip)
 	if err != nil {
 		return nil, err
@@ -416,10 +417,15 @@ func (deploy *Deploy) deployZip(zip string) (*Response, error) {
 	defer zipFile.Close()
 
 	info, err := zipFile.Stat()
-
 	if err != nil {
 		return nil, err
 	}
+
+	log.WithFields(logrus.Fields{
+		"name": info.Name(),
+		"size": info.Size(),
+		"mode": info.Mode(),
+	}).Debugf("Opened file %s of %s bytes", info.Name(), info.Size())
 
 	options := &RequestOptions{
 		RawBody:       zipFile,
@@ -433,7 +439,7 @@ func (deploy *Deploy) deployZip(zip string) (*Response, error) {
 		log.WithError(err).Warn("Error while uploading zip file")
 	}
 
-	log.Debug("Finished uploading zip file")
+	log.Info("Finished uploading zip file")
 	return resp, err
 }
 
