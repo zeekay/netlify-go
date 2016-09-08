@@ -83,10 +83,10 @@ func (u *uploadError) Set(err error) {
 	}
 }
 
-func (u *uploadError) Get() error {
+func (u *uploadError) Empty() bool {
 	u.mutex.Lock()
 	defer u.mutex.Unlock()
-	return u.err
+	return u.err == nil
 }
 
 type deployFiles struct {
@@ -196,7 +196,7 @@ func (deploy *Deploy) Publish() (*Response, error) {
 }
 
 func (deploy *Deploy) uploadFile(dir, path string, sharedError uploadError) error {
-	if sharedError.Get() != nil {
+	if !sharedError.Empty() {
 		return errors.New("Canceled because upload has already failed")
 	}
 
@@ -372,7 +372,7 @@ func (deploy *Deploy) DeployDirWithGitInfo(dir, branch, commitRef string) (*Resp
 					wg.Done()
 				}()
 				log.Debugf("Starting to upload %s/%s", path, sha)
-				if sharedErr.Get() != nil {
+				if !sharedErr.Empty() {
 					return
 				}
 
@@ -389,7 +389,7 @@ func (deploy *Deploy) DeployDirWithGitInfo(dir, branch, commitRef string) (*Resp
 	log.Debugf("Waiting for required files to upload")
 	wg.Wait()
 
-	if sharedErr.Get() != nil {
+	if !sharedErr.Empty() {
 		return resp, sharedErr.err
 	}
 
